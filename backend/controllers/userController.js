@@ -12,7 +12,7 @@ export const register = async (req, res) => {
         }
         const user = await User.findOne({ email })
         if (user) {
-            res.status(400).json({ success: false, message: 'user already exists' })
+           return res.status(400).json({ success: false, message: 'user already exists' })
         }
         const hashedPassword = await bcrypt.hash(password, 10)
 
@@ -31,4 +31,51 @@ export const register = async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message })
     }
+}
+
+export const verify = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization
+        if (!authHeader || !authHeader.startsWith("Bearer "))
+           return res.status(400).json({ success: false, message: "Authorization token is missing or invalid" })
+        const token = authHeader.split(" ")[1] // Bearer hsdjkdksdhd
+        let decoded
+        try {
+            decoded = jwt.verify(token, process.env.SECRET_KEY)
+
+        } catch (error) {
+            if (error.name === "TokenExpiredError") {
+                return res.status(400).json({
+                    success: false,
+                    message: "the registretion token has expired"
+                })
+            }
+            return res.status(400).json({
+                success: false,
+                message: "Token verification failed"
+            })
+        }
+        const user = await User.findById(decoded.id)
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "User not found"
+            })
+        }
+        user.token = null
+        user.isVerified = true
+        await user.save()
+        return res.status(200).json({
+            success: true,
+            message: "Email verified successfully"
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+
+
+
 }

@@ -1,5 +1,5 @@
 
-import {User} from "../models/userModel.js"
+import { User } from "../models/userModel.js"
 import jwt from "jsonwebtoken";
 export const isAuthenticated = async (req, res, next) => {
     try {
@@ -24,19 +24,19 @@ export const isAuthenticated = async (req, res, next) => {
                 })
             }
             return res.status(400).json({
-                success:false,
-                message:"Access token is missing or invalid"
+                success: false,
+                message: "Access token is missing or invalid"
             })
         }
 
         const user = await User.findById(decoded.id)
-        if(!user){
+        if (!user) {
             return res.status(400).json({
-                success:false,
-                message:"User not find"
+                success: false,
+                message: "User not find"
             })
         }
-
+        req.user = user
         req.id = user._id
         next()
 
@@ -44,6 +44,16 @@ export const isAuthenticated = async (req, res, next) => {
         return res.status(500).json({
             success: false,
             message: error.message
+        })
+    }
+}
+
+export const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next()
+    } else {
+        return res.status(403).json({
+            message: "Access denied : admins only"
         })
     }
 }
